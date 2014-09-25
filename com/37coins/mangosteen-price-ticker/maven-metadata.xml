@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata>
+  <groupId>com.37coins</groupId>
+  <artifactId>mangosteen-price-ticker</artifactId>
+  <versioning>
+    <versions>
+      <version>0.1.0-SNAPSHOT</version>
+    </versions>
+    <lastUpdated>20140925015855</lastUpdated>
+  </versioning>
+</metadata>
