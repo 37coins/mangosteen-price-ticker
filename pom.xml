@@ -4,7 +4,7 @@
 	<artifactId>mangosteen-price-ticker</artifactId>
 	<packaging>jar</packaging>
 	<groupId>com.37coins</groupId>
-	<version>0.1.0-SNAPSHOT</version>
+	<version>0.1.0</version>
 
 	<properties>
     	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -26,12 +26,12 @@
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
-			<version>2.2.3</version>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 			<artifactId>jackson-databind</artifactId>
 			<groupId>com.fasterxml.jackson.core</groupId>
-			<version>2.2.3</version>
+			<version>2.4.0</version>
 		</dependency>
 		<dependency>
 		    <groupId>org.joda</groupId>
