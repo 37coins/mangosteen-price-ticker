@@ -3,16 +3,14 @@ package com._37coins;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Locale.Builder;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 
+import org.apache.commons.lang3.LocaleUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
@@ -21,6 +19,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.joda.money.CurrencyUnit;
+import org.joda.money.IllegalCurrencyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,15 +108,53 @@ public class FiatPriceProvider {
 			if (null!=rate&&null!=cu){
 				return new PriceTick().setLastFactored(btcValue.multiply(rate)).setCurCode(cu.getCode()).setLast(rate);
 			}
-			CurrencyUnit cu = CurrencyUnit.of(new Builder().setRegion(locale.getCountry()).build());
-			return getLocalCurValue(btcValue, cu);
+            CurrencyUnit cu = findCurrency(locale);
+            return getLocalCurValue(btcValue, cu);
 		}
 		return null;
 	}
-	
-	public String getLocalCurCode(Locale locale){
-		CurrencyUnit cu = CurrencyUnit.of(new Builder().setRegion(locale.getCountry()).build());
-		return cu.getCode();
+
+    private CurrencyUnit findCurrency(Locale locale) {
+        String country = locale.getCountry();
+        final List<CurrencyUnit> popularCurrency = Arrays.asList(
+                CurrencyUnit.USD, CurrencyUnit.EUR, CurrencyUnit.JPY,
+                CurrencyUnit.CHF, CurrencyUnit.AUD, CurrencyUnit.CAD
+        );
+        if (StringUtils.isEmpty(country) && StringUtils.isNotEmpty(locale.getLanguage())){
+            List<Locale> locales = LocaleUtils.countriesByLanguage(locale.getLanguage());
+            List<CurrencyUnit> currencyUnits = new ArrayList<>();
+            for (Locale l : locales){
+                CurrencyUnit currencyByCountry = findCurrencyByCountry(l.getCountry());
+                if (currencyByCountry !=null){
+                    currencyUnits.add(currencyByCountry);
+                }
+            }
+            for (CurrencyUnit currencyUnit : popularCurrency){
+                if (currencyUnits.contains(currencyUnit)){
+                    return currencyUnit;
+                }
+            }
+            if (!currencyUnits.isEmpty()){
+                return currencyUnits.get(0);
+            }
+        }
+        return findCurrencyByCountry(country, CurrencyUnit.USD);
+    }
+
+    private CurrencyUnit findCurrencyByCountry(String country) {
+        return findCurrencyByCountry(country, null);
+    }
+    private CurrencyUnit findCurrencyByCountry(String country, CurrencyUnit defaultCurrencyUnit) {
+        try {
+            return CurrencyUnit.ofCountry(country);
+        } catch (IllegalCurrencyException e) {
+            log.warn("Use default currency: "+ defaultCurrencyUnit +" for country: "+country);
+            return defaultCurrencyUnit;
+        }
+    }
+
+    public String getLocalCurCode(Locale locale){
+		return findCurrency(locale).getCode();
 	}
 	
 	public String getLocalCurCode(){
