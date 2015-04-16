@@ -1,0 +1,36 @@
+language: java
+jdk:
+ - openjdk7
+
+branches:
+  only:
+    - develop
+    - release/v1.0.1
+
+cache: true
+
+env: 
+  global: 
+   #SLACK_URLPATH
+   - secure: frUlq1+a0Lkc8KBpcfsq0hFjul3uHUtQtv2sGadO/PNiRWkwGy1nKitsreOgIgoA4Ad8bV0cARXY8UFM7ytxdvKaW3e5GKzTZCeAGv8F6luIZQYPgZwtvHjOeURUSH1rTYMMC2R7cejzcAWKL6s4xDwtrie/tA42EcE5Mt2RD2bAB1vmRoWomQicxKQUTtC9ZLR6LTl1mWv2l5xb41/sjbs/nP5ogbWsXoGF8dr/vXm6rHY0R4ps3ASeA2+s+QbstpflYbby48ep5gZdHR9X2wat+b0+F8uL8XHPyZrR1EyM9T4gNJYnqATPK/cfX9sCsuiDrBq3e9noe9M/z1wv4w==
+   #MVN_REPO_PASS
+   - secure: GpJEx7CrMY6InNkC9+onefTcf6S/2kZv6cTe/r1NG8HfIoCIPQkJ8R0uZYTmHDlWAIYlbdK0ZMJh+Atjpe9k3WoQ8R8tKNjnugpYQ+44tjBaBsueNopxi8gnCdu4gzgBTI7JYz3603RJNehpJtlNuSlDKa32wTw90pWSNAnXgoAVsK4kb551mK7I1P8SK2TZOObIRpbXY4RLbkWrdmHdAh7gd8SAcmT1xCu6tZR+ErVm5kHg62P9r9q2se0MdaAIvfasYnctAoqc9JoCdFEnXUQglzKzzPSAC+9jRHtez9OR8KYGabihRNOo1BbGXPRg+4Lt8iUgy5mBVUAHSw7BWg==
+   #MVN_REPO_PASS_WRITE
+   - secure: YV90fY2zHfEt1HNC2sh/WmxpjdTBRnYAS5YT0uTSUKwnpRo0mwh8U0P4z5tvVVqGjeBP6X9gRzvOXWb5coCRHbT8yzsqem5OEMcxxM+SKzda1izBXDYD5fu+HwVqZbniX2IxzglDtQNn9/sEXyU4RHJZ7lTyByzeyco3xt+ex7ZVtkqo1eKnIACyirlqM7NcmuCeWVQc/Zh8U6hQm0XVKexOxDwaB8SyQQBquMP91pgp0tuaIcoDlvIMen6E7sWqSyGwflZuKR9dIknHXpL/VrNzT8t75NeDeyTYzZP4+t/k2Tw0rnTD84f7BMDcBX3Ujqg5XOyqjq7IlOaqKvkJ4w==
+   - SLACK_ORG=37coins 
+   - PROJECT=mangosteen-price-ticker
+
+after_success : 
+   - bash  set_mvn_settings_libs.bash $MVN_REPO_PASS $MVN_REPO_PASS_WRITE
+   - mvn clean deploy -DskipTests
+   - python slack_notifier_new.py --project $PROJECT --org $SLACK_ORG --urlpath $SLACK_URLPATH -s 
+
+after_failure :
+   - python slack_notifier_new.py --project $PROJECT --org $SLACK_ORG --urlpath $SLACK_URLPATH
+
+notifications:
+    email:
+      recipients:
+        - dev@37coins.com
+      on_success: always
+      on_failure: change
