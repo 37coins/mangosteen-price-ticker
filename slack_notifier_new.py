@@ -26,7 +26,7 @@ def get_full_message(commit):
 def post_message(connection, url, success, project):
   headers = {'Content-Type': 'application/json'}
   build_url = os.environ['BUILD_URL']
-  build_number = os.environ['BUILD_GROUP_NUMBER']
+  build_number = os.environ['BUILD_NUMBER']
   branch = os.environ['BRANCH']
   commit = os.environ['COMMIT']
 
