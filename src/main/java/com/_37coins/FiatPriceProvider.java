@@ -1,20 +1,12 @@
 package com._37coins;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
-
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.squareup.okhttp.Call;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
-
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.money.CurrencyUnit;
@@ -22,8 +14,14 @@ import org.joda.money.IllegalCurrencyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.SocketTimeoutException;
+import java.net.URISyntaxException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 public class FiatPriceProvider {
     //collected from api: https://api.bitcoinaverage.com/ticker/global/
@@ -117,18 +115,26 @@ public class FiatPriceProvider {
 
     Map<String, PriceTick> receivePriceTickMap() throws URISyntaxException, IOException {
         OkHttpClient client = new OkHttpClient();
-        client.setConnectTimeout(500, TimeUnit.MILLISECONDS);
-        client.setReadTimeout(500, TimeUnit.MILLISECONDS);
+        client.setConnectTimeout(2000, TimeUnit.MILLISECONDS);
+        client.setReadTimeout(2000, TimeUnit.MILLISECONDS);
 
         Request request = new Request.Builder()
                 .url(url + "/all")
                 .build();
 
-        Response response = client.newCall(request).execute();
+        String response = null;
+        int maxAttempt = 3, currAttempt = 0;
+        while (currAttempt++ < maxAttempt) {
+            response = tryCall(client.newCall(request));
+            if (response != null) {
+                break;
+            }
+        }
+        if (response == null) {
+            throw new RuntimeException("Could not get PriceTick");
+        }
 
-        return new ObjectMapper().readValue(
-                response.body().string(),
-                new TypeReference<Map<String, PriceTick>>(){});
+        return new ObjectMapper().readValue(response, new TypeReference<Map<String, PriceTick>>(){});
     }
 
     public PriceTick getLocalCurValue(BigDecimal btcValue, Locale locale) {
@@ -140,6 +146,15 @@ public class FiatPriceProvider {
             return getLocalCurValue(btcValue, cu);
         }
         return null;
+    }
+
+    private String tryCall(Call priceCall) throws IOException {
+        try {
+            return priceCall.execute().body().string();
+        } catch (SocketTimeoutException e) {
+            log.info("Timeout when getting PriceTick");
+            return null;
+        }
     }
 
     private CurrencyUnit findCurrency(Locale locale) {
